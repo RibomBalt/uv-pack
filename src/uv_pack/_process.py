@@ -94,6 +94,16 @@ def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | N
         else nullcontext()
     )
 
+    monitor_stop = threading.Event()
+    monitor = None
+    if diagnostics:
+        monitor = threading.Thread(
+            target=_sample_top_until_stopped,
+            args=(monitor_stop,),
+            daemon=True,
+        )
+        monitor.start()
+
     _diagnostic_log(f"run_step {cmd_name}: before context enter")
     try:
         with ctx as progress:
@@ -107,6 +117,9 @@ def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | N
             finally:
                 _diagnostic_log(f"run_step {cmd_name}: step body returned")
     finally:
+        monitor_stop.set()
+        if monitor is not None:
+            monitor.join()
         _diagnostic_log(f"run_step {cmd_name}: context exited")
 
 
@@ -119,28 +132,13 @@ def run_cmd(
     """Execute a subprocess command, optionally streaming its output."""
     diagnostics = _diagnostics_enabled()
     _diagnostic_log(f"command {cmd_name}: started")
-    monitor_stop = threading.Event()
-    monitor = None
-    if diagnostics:
-        monitor = threading.Thread(
-            target=_sample_top_until_stopped,
-            args=(monitor_stop,),
-            daemon=True,
-        )
-        monitor.start()
-
     started = time.monotonic()
-    try:
-        proc = subprocess.run(
-            cmd,
-            text=True,
-            capture_output=not (stream_output or diagnostics),
-            check=False,
-        )
-    finally:
-        monitor_stop.set()
-        if monitor is not None:
-            monitor.join()
+    proc = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=not (stream_output or diagnostics),
+        check=False,
+    )
 
     _diagnostic_log(
         f"command {cmd_name}: finished in {time.monotonic() - started:.3f}s "

@@ -11,7 +11,6 @@ def export_requirements(
     cmd = [
         "uv",
         "export",
-        "--quiet",
         "--no-dev",
         "--no-header",
         "--no-hashes",
@@ -33,7 +32,6 @@ def export_local_requirements(
     cmd = [
         "uv",
         "export",
-        "--quiet",
         "--no-dev",
         "--no-header",
         "--no-hashes",

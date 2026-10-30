@@ -21,7 +21,7 @@ def export_requirements(
     ]
 
     cmd.extend(other_args.split())
-    exit_on_error(run_cmd(cmd, "uv export", stream_output=True))
+    exit_on_error(run_cmd(cmd, "uv export third-party", stream_output=True))
 
 
 def export_local_requirements(
@@ -44,4 +44,4 @@ def export_local_requirements(
     ]
 
     cmd.extend(other_args.split())
-    exit_on_error(run_cmd(cmd, "uv export", stream_output=True))
+    exit_on_error(run_cmd(cmd, "uv export local", stream_output=True))

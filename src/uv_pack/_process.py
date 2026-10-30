@@ -20,6 +20,7 @@ def _diagnostics_enabled() -> bool:
 
 
 _DIAGNOSTICS_START = time.monotonic()
+_RUN_STEP_LOCAL = threading.local()
 
 
 def _diagnostic_log(message: str) -> None:
@@ -84,6 +85,8 @@ class CommandOutput:
 def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | None]:
     """Context manager to show a progress display during step execution."""
     diagnostics = _diagnostics_enabled()
+    previous_depth = getattr(_RUN_STEP_LOCAL, "depth", 0)
+    outermost = previous_depth == 0
     ctx = (
         Progress(
             SpinnerColumn(),
@@ -96,16 +99,20 @@ def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | N
 
     monitor_stop = threading.Event()
     monitor = None
-    if diagnostics:
+    if diagnostics and outermost:
         monitor = threading.Thread(
             target=_sample_top_until_stopped,
             args=(monitor_stop,),
             daemon=True,
         )
-        monitor.start()
 
-    _diagnostic_log(f"run_step {cmd_name}: before context enter")
+    monitor_started = False
+    _RUN_STEP_LOCAL.depth = previous_depth + 1
     try:
+        if monitor is not None:
+            monitor.start()
+            monitor_started = True
+        _diagnostic_log(f"run_step {cmd_name}: before context enter")
         with ctx as progress:
             _diagnostic_log(f"run_step {cmd_name}: context entered")
             if progress is not None:
@@ -117,8 +124,10 @@ def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | N
             finally:
                 _diagnostic_log(f"run_step {cmd_name}: step body returned")
     finally:
-        monitor_stop.set()
-        if monitor is not None:
+        _RUN_STEP_LOCAL.depth = previous_depth
+        if monitor_started:
+            monitor_stop.set()
+        if monitor_started and monitor is not None:
             monitor.join()
         _diagnostic_log(f"run_step {cmd_name}: context exited")
 

@@ -16,6 +16,8 @@ def download_third_party_wheels(
     cmd = [
         "uv",
         "run",
+        # pip is the only required dependency; avoid syncing/building the project.
+        "--no-project",
         "--with",
         "pip",
         "python",

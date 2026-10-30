@@ -39,18 +39,23 @@ def run_step(cmd_name: str, *, should_run: bool = True) -> Iterator[Progress | N
         yield progress
 
 
-def run_cmd(cmd: list[str], cmd_name: str) -> CommandOutput:
-    """Execute a subprocess command and capture output."""
+def run_cmd(
+    cmd: list[str],
+    cmd_name: str,
+    *,
+    stream_output: bool = False,
+) -> CommandOutput:
+    """Execute a subprocess command, optionally streaming its output."""
     proc = subprocess.run(
         cmd,
         text=True,
-        capture_output=True,
+        capture_output=not stream_output,
         check=False,
     )
     return CommandOutput(
         name=cmd_name,
-        stdout=proc.stdout,
-        stderr=proc.stderr,
+        stdout=proc.stdout or "",
+        stderr=proc.stderr or "",
         returncode=proc.returncode,
     )
 

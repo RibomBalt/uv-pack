@@ -173,7 +173,9 @@ def pack(
     copy_unpack_scripts(output_directory=output_directory)
 
     if Step.export in selected_steps:
-        with run_step("export"):
+        # uv export output is streamed so slow dependency exports remain visible.
+        # Avoid overlapping the child process output with a Rich spinner.
+        with run_step("export", should_run=False):
             export_requirements(
                 requirements_file=pack.requirements_export_txt,
                 other_args=uv_export,

@@ -180,18 +180,18 @@ def pack(
                 requirements_file=pack.requirements_export_txt,
                 other_args=uv_export,
             )
+            console_print(
+                f"[green]✔ Exported third-party requirements[/green] "
+                f"'{pack.requirements_export_txt}'",
+            )
             export_local_requirements(
                 requirements_file=pack.requirements_local_txt,
                 other_args=uv_export,
             )
-        console_print(
-            f"[green]✔ Exported[/green] requirements '{pack.requirements_export_txt}'",
-            level=Verbosity.verbose,
-        )
-        console_print(
-            f"[green]✔ Exported[/green] requirements '{pack.requirements_local_txt}'",
-            level=Verbosity.verbose,
-        )
+            console_print(
+                f"[green]✔ Exported local package requirements[/green] "
+                f"'{pack.requirements_local_txt}'",
+            )
 
     if Step.download in selected_steps:
         _raise_requirement_txt_missing(pack.requirements_export_txt)
